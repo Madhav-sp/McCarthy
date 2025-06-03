@@ -8,6 +8,7 @@ import {
   Card,
   Form,
   InputGroup,
+  Placeholder, // Import Placeholder component
 } from "react-bootstrap";
 
 import {
@@ -109,8 +110,6 @@ export default function Home() {
         const response = await fetch("/api/tool/");
         const data = await response.json();
         setTrendingTools(data.data);
-
-        // console.log(data.data);
       } catch (error) {
         console.error("Error fetching tools:", error);
         setError("Failed to load tools.");
@@ -122,8 +121,8 @@ export default function Home() {
     fetchTools();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  // Removed direct return statements for loading/error
+  // The page will now render immediately, and the data will populate when ready.
 
   return (
     <div
@@ -137,14 +136,16 @@ export default function Home() {
       }}
     >
       <style>
-        {`.card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        {`
+        .card {
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-     .card.hover-effect {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-     }`}
+        .card.hover-effect {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+        }
+        `}
       </style>
 
       {/* HERO SECTION */}
@@ -355,19 +356,45 @@ export default function Home() {
           </div>
 
           <Row xs={1} md={3} className="g-4">
-            {trendingTools?.map((tool, idx) => (
-              <ToolCard
-                tool={{
-                  _id: tool._id,
-                  icon: tool.image,
-                  name: tool.title,
-                  description: tool.description,
-                  tags: tool.hashtags,
-                  toolUrl: tool.toolUrl,
-                }}
-                key={idx}
-              />
-            ))}
+            {loading ? (
+              // Placeholder/Skeleton for loading state
+              Array.from({ length: 3 }).map((_, idx) => (
+                <Col key={idx}>
+                  <Card className="h-100 shadow-sm rounded-4 p-3 border-0">
+                    <Card.Body>
+                      <Placeholder as={Card.Title} animation="glow">
+                        <Placeholder xs={6} />
+                      </Placeholder>
+                      <Placeholder as={Card.Text} animation="glow">
+                        <Placeholder xs={7} /> <Placeholder xs={4} />{" "}
+                        <Placeholder xs={4} /> <Placeholder xs={6} />{" "}
+                        <Placeholder xs={8} />
+                      </Placeholder>
+                      <Placeholder.Button variant="primary" xs={6} />
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))
+            ) : error ? (
+              <Col>
+                <div className="text-danger">Error: {error}</div>
+              </Col>
+            ) : (
+              // Actual ToolCards once data is loaded
+              trendingTools?.map((tool, idx) => (
+                <ToolCard
+                  tool={{
+                    _id: tool._id,
+                    icon: tool.image,
+                    name: tool.title,
+                    description: tool.description,
+                    tags: tool.hashtags,
+                    toolUrl: tool.toolUrl,
+                  }}
+                  key={idx}
+                />
+              ))
+            )}
           </Row>
         </Container>
       </section>

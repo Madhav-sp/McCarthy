@@ -11,6 +11,7 @@ import {
   Card,
   ListGroup,
   Modal,
+  Placeholder, // Import Placeholder
 } from "react-bootstrap";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -23,6 +24,8 @@ export default function Explore() {
   const [categoryFilters, setCategoryFilters] = useState([]);
   const [pricingFilters, setPricingFilters] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
+  const [error, setError] = useState(null); // Add error state
 
   const navigate = useNavigate();
 
@@ -32,7 +35,7 @@ export default function Explore() {
 
   useEffect(() => {
     if (paramSearchQuery) {
-      navigate("/explore")
+      navigate("/explore");
       setSearchQuery(paramSearchQuery);
     }
   }, [paramSearchQuery]);
@@ -54,12 +57,16 @@ export default function Explore() {
   ];
 
   const fetchTools = async () => {
+    setLoading(true); // Set loading to true before fetching
+    setError(null); // Clear any previous errors
     try {
       const response = await axios.get("/api/tool");
       setTools(response.data.data);
-      // console.log("Fetched tools from backend:", response.data.data);
     } catch (error) {
       console.error("Error fetching tools:", error);
+      setError("Failed to load tools. Please try again later.");
+    } finally {
+      setLoading(false); // Set loading to false after fetching (success or error)
     }
   };
 
@@ -139,8 +146,11 @@ export default function Explore() {
   }, []);
 
   useEffect(() => {
-    filterTools();
-  }, [searchQuery, categoryFilters, pricingFilters, tools]);
+    // Only filter if tools have been loaded or if filters/search change
+    if (!loading) {
+      filterTools();
+    }
+  }, [searchQuery, categoryFilters, pricingFilters, tools, loading]); // Add 'loading' to dependencies
 
   const primaryPurple = "#6c63ff";
   const lightPurple = "#f0f0ff";
@@ -174,7 +184,6 @@ export default function Explore() {
       </div>
 
       <div className="d-lg-none mb-4 px-3">
-        {" "}
         <Form
           onSubmit={handleSearchSubmit}
           className="d-flex align-items-center justify-content-between"
@@ -234,7 +243,6 @@ export default function Explore() {
 
       <Row>
         <Col lg={3} className="d-none d-lg-block mb-4">
-          {" "}
           <Card
             className="shadow-sm border-0 rounded-4"
             style={{ padding: "1.5rem" }}
@@ -381,15 +389,44 @@ export default function Explore() {
         </Col>
 
         <Col lg={9}>
-          <ToolList
-            tools={filteredTools}
-            userToken={localStorage.getItem("accessToken")}
-          />
-          {filteredTools.length === 0 && (
-            <div className="text-center mt-5" style={{ color: mutedText }}>
-              <h4>No tools found matching your criteria.</h4>
-              <p>Try adjusting your search query or filters.</p>
+          {loading ? (
+            <Row xs={1} md={2} lg={3} className="g-4">
+              {Array.from({ length: 9 }).map((_, idx) => (
+                <Col key={idx}>
+                  <Card className="h-100 shadow-sm rounded-4 p-3 border-0">
+                    <Card.Body>
+                      <Placeholder as={Card.Title} animation="glow">
+                        <Placeholder xs={6} />
+                      </Placeholder>
+                      <Placeholder as={Card.Text} animation="glow">
+                        <Placeholder xs={7} /> <Placeholder xs={4} />{" "}
+                        <Placeholder xs={4} /> <Placeholder xs={6} />{" "}
+                        <Placeholder xs={8} />
+                      </Placeholder>
+                      <Placeholder.Button variant="primary" xs={6} />
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ) : error ? (
+            <div className="text-center mt-5 text-danger">
+              <h4>{error}</h4>
+              <p>Please check your internet connection or try again later.</p>
             </div>
+          ) : (
+            <>
+              <ToolList
+                tools={filteredTools}
+                userToken={localStorage.getItem("accessToken")}
+              />
+              {filteredTools.length === 0 && (
+                <div className="text-center mt-5" style={{ color: mutedText }}>
+                  <h4>No tools found matching your criteria.</h4>
+                  <p>Try adjusting your search query or filters.</p>
+                </div>
+              )}
+            </>
           )}
         </Col>
       </Row>
